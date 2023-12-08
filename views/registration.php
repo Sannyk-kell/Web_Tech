@@ -9,6 +9,10 @@
 <body>
 
 <?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Перевірка полів форми
     $errors = array();
@@ -37,17 +41,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
   }
 
-    if (!empty($errors)) {
-        echo "<ul>";
-        foreach ($errors as $error) {
-            echo "<li>$error</li>";
-        }
-        echo "</ul>";
-    } else {
+  if (empty($errors)) {
+    // Всі дані введені коректно, тепер хешуємо пароль
+    $login = $_POST["login"];
+    $password = $_POST["password"];
+    $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+    // Підключення до бази даних
+    $servername = "localhost";
+    $username = "root";
+    $password_db = "";
+    $dbname = "my_website_db";
+
+    $conn = new mysqli($servername, $username, $password_db, $dbname);
+
+    // Перевірка з'єднання
+    if ($conn->connect_error) {
+        die("Помилка з'єднання з базою даних: " . $conn->connect_error);
+    }
+
+    // Підготовка та виконання запиту на вставку даних
+    $sql = "INSERT INTO users (login, password, email, phone) VALUES ('$login', '$hashed_password', '{$_POST["email"]}', '{$_POST["phone"]}')";
+
+    if ($conn->query($sql) === TRUE) {
         echo "<h2>Реєстрація пройшла успішно!</h2>";
         echo "<p>Дякуємо за реєстрацію.</p>";
         echo "<a href='index.php'>На головну</a>";
+    } else {
+        echo "Помилка: " . $sql . "<br>" . $conn->error;
     }
+
+    // Закриття з'єднання з базою даних
+    $conn->close();
+  } else {
+    echo "<ul>";
+    foreach ($errors as $error) {
+        echo "<li>$error</li>";
+    }
+    echo "</ul>";
+  }
 }
 ?>
 
